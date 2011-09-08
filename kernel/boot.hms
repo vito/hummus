@@ -1,0 +1,154 @@
+(define sequence
+  ((wrap
+     (vau (seq2) #ignore
+          (seq2
+            (define aux
+              (vau (head . tail) env
+                   (if (null? tail)
+                     (eval head env)
+                     (seq2
+                       (eval head env)
+                       (eval (cons aux tail) env)))))
+            (vau body env
+                 (if (null? body)
+                   #inert
+                   (eval (cons aux body) env))))))
+   (vau (first second) env
+        ((wrap (vau #ignore #ignore (eval second env)))
+         (eval first env)))))
+
+(define list (wrap (vau x #ignore x)))
+
+(define list*
+  (wrap
+    (vau args #ignore
+         (sequence
+           (define aux
+             (wrap
+               (vau ((head . tail)) #ignore
+                    (if (null? tail)
+                      head
+                      (cons head (aux tail))))))
+           (aux args)))))
+
+(define car (wrap (vau ((x . #ignore)) #ignore x)))
+(define cdr (wrap (vau ((#ignore . x)) #ignore x)))
+
+(define length
+  (wrap
+    (vau (x) #ignore
+      (if (null? x)
+        0
+        (+ 1 (length (cdr x)))))))
+
+(define vau
+  ((wrap
+     (vau (vau) #ignore
+          (vau (formals eformal . body) env
+               (eval (list vau formals eformal
+                           (if (>? (length body) 1)
+                             (cons sequence body)
+                             (car body))) env))))
+   vau))
+
+(define lambda
+  (vau (formals . body) env
+       (wrap (eval (list* vau formals #ignore body) env))))
+
+(define caar (lambda (((x . #ignore) . #ignore)) x))
+(define cdar (lambda (((#ignore . x) . #ignore)) x))
+(define cadr (lambda ((#ignore . (x . #ignore))) x))
+(define cddr (lambda ((#ignore . (#ignore . x))) x))
+
+(define caaar (lambda ((((x . #ignore) . #ignore) . #ignore)) x))
+(define cdaar (lambda ((((#ignore . x) . #ignore) . #ignore)) x))
+(define cadar (lambda (((#ignore . (x . #ignore)) . #ignore)) x))
+(define cddar (lambda (((#ignore . (#ignore . x)) . #ignore)) x))
+(define caadr (lambda ((#ignore . ((x . #ignore) . #ignore))) x))
+(define cdadr (lambda ((#ignore . ((#ignore . x) . #ignore))) x))
+(define caddr (lambda ((#ignore . (#ignore . (x . #ignore)))) x))
+(define cdddr (lambda ((#ignore . (#ignore . (#ignore . x)))) x))
+
+(define caaaar (lambda (((((x . #ignore) . #ignore) . #ignore). #ignore))x))
+(define cdaaar (lambda (((((#ignore . x) . #ignore) . #ignore). #ignore))x))
+(define cadaar (lambda ((((#ignore . (x . #ignore)) . #ignore). #ignore))x))
+(define cddaar (lambda ((((#ignore . (#ignore . x)) . #ignore). #ignore))x))
+(define caadar (lambda (((#ignore . ((x . #ignore) . #ignore)). #ignore))x))
+(define cdadar (lambda (((#ignore . ((#ignore . x) . #ignore)). #ignore))x))
+(define caddar (lambda (((#ignore . (#ignore . (x . #ignore))). #ignore))x))
+(define cdddar (lambda (((#ignore . (#ignore . (#ignore . x))). #ignore))x))
+(define caaadr (lambda ((#ignore .(((x . #ignore) . #ignore) . #ignore)))x))
+(define cdaadr (lambda ((#ignore .(((#ignore . x) . #ignore) . #ignore)))x))
+(define cadadr (lambda ((#ignore .((#ignore . (x . #ignore)) . #ignore)))x))
+(define cddadr (lambda ((#ignore .((#ignore . (#ignore . x)) . #ignore)))x))
+(define caaddr (lambda ((#ignore .(#ignore . ((x . #ignore) . #ignore))))x))
+(define cdaddr (lambda ((#ignore .(#ignore . ((#ignore . x) . #ignore))))x))
+(define cadddr (lambda ((#ignore .(#ignore . (#ignore . (x . #ignore)))))x))
+(define cddddr (lambda ((#ignore .(#ignore . (#ignore . (#ignore . x)))))x))
+
+(define apply
+  (lambda (appv arg . opt)
+    (eval (cons (unwrap appv) arg)
+          (if (null? opt)
+            (make-environment)
+            (car opt)))))
+
+(define cond
+  (vau clauses env
+       (define aux
+         (lambda ((test . body) . clauses)
+           (if (eval test env)
+             (apply (wrap sequence) body env)
+             (apply (wrap cond) clauses env))))
+       (if (null? clauses) #inert
+         (apply aux clauses))))
+
+(define get-list-metrics
+  (lambda (ls)
+    (define aux
+      (lambda (kth k nth n)
+        (if (>=? k n)
+          (if (pair? (cdr nth))
+            (aux ls 0 (cdr nth) (+ n 1))
+            (list (+ n 1)
+                  (if (null? (cdr nth)) 1 0) (+ n 1)
+                  0))
+          (if (eq? kth nth)
+            (list n 0 k (- n k))
+            (aux (cdr kth) (+ k 1) nth n)))))
+    (if (pair? ls)
+      (aux ls 0 ls 0)
+      (list 0 (if (null? ls) 1 0) 0 0))))
+
+(define list-tail
+  (lambda (ls k)
+    (if (>? k 0)
+      (list-tail (cdr ls) (- k 1))
+      ls)))
+
+(define map
+  (lambda (f xs)
+    (if (null? xs)
+      ()
+      (cons (f (car xs)) (map f (cdr xs))))))
+
+(define any?
+  (lambda (f xs)
+    (cond
+      ((null? xs) #f)
+      ((f (car xs)) #t)
+      (#t (any? f (cdr xs))))))
+
+(define let
+  (vau (bindings . body) env
+    (eval (list apply
+                (list lambda (map car bindings) (cons sequence body))
+                (cons list (map cadr bindings))) env)))
+
+(define zip
+  (lambda (f . xss)
+    (let ((rest (map cdr xss)))
+      (cons (apply f (map car xss))
+            (if (any? null? rest)
+              ()
+              (apply zip (cons f rest)))))))

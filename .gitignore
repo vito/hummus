@@ -1,0 +1,5 @@
+*.ayc
+*.rbc
+*.hi
+*.o
+dist/
