@@ -136,3 +136,43 @@
             (if (any? null? rest)
               ()
               (apply zip (cons f rest)))))))
+
+(define not? (lambda (x) (if x #f #t)))
+
+(define and?
+  (vau xs e
+    (cond
+      ((null? xs) #t)
+      ((eval (car xs) e) (apply (wrap and?) (cdr xs) e))
+      (#t #f))))
+
+(define or?
+  (vau xs e
+    (cond
+      ((null? xs) #f)
+      ((eval (car xs) e) #t)
+      (#t (apply (wrap or?) (cdr xs) e)))))
+
+(define combiner?
+  (lambda xs
+    (apply (wrap and?) (map (lambda (x) (or? (operative? x) (applicative? x))) xs))))
+
+(define at
+  (lambda (n xs)
+    (car (drop n xs))))
+
+(define reduce
+  (lambda (f a xs)
+    (if (null? xs)
+      a
+      (reduce f (f a (car xs)) (cdr xs)))))
+
+(define append
+  (lambda xss
+    (define append2
+      (lambda (xs ys)
+        (if (null? xs)
+          ys
+          (cons (car xs) (append2 (cdr xs) ys)))))
+
+    (reduce append2 () xss)))
