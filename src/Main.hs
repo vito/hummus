@@ -47,17 +47,3 @@ repl p e = do
     finish ss = do
       liftIO (evaluateSequence e ss) >>= outputStrLn . show
       repl "" e
-
-
-avgRuns :: Int -> (IO ()) -> IO NominalDiffTime
-avgRuns i x = do
-  total <- go i 0
-  return (total / fromIntegral i)
-  where
-    go :: Int -> NominalDiffTime -> IO NominalDiffTime
-    go 0 acc = return acc
-    go n acc = do
-      a <- getCurrentTime
-      x
-      b <- getCurrentTime
-      go (n - 1) (acc + diffUTCTime b a)

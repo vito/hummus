@@ -39,10 +39,16 @@ new = do
     return (Pair a b)
 
   def env "if" $ \(Pair a (Pair b (Pair c _))) e -> do
-    Boolean t <- evaluate e a
-    if t
-      then evaluate e b
-      else evaluate e c
+    t <- evaluate e a
+
+    case t of
+      Boolean True ->
+        evaluate e b
+
+      Boolean False ->
+        evaluate e c
+
+      _ -> error ("not a boolean: " ++ show t)
 
   defn env "environment?"  $ \(Pair a _) _ ->
     return (Boolean (isEnvironment a))
