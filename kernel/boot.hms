@@ -141,9 +141,9 @@
 
 (define let
   (vau (bindings . body) env
-    (eval (list apply
-                (list lambda (map car bindings) (cons sequence body))
-                (cons list (map cadr bindings))) env)))
+    (eval (cons (list* lambda (map car bindings) body)
+                (map cadr bindings))
+          env)))
 
 (define zip
   (lambda (f . xss)
