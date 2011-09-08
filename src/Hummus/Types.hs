@@ -35,7 +35,7 @@ instance Show Value where
   show (Operative { oFormals = fs, oEnvironmentFormal = ef, oBody = b }) =
     "<operative " ++ show fs ++ " " ++ show ef ++ " " ++ show b ++ ">"
   show (CoreOperative _) = "<core operative>"
-  show (Pair a b) = "(" ++ showPair (Pair a b) ++ ")"
+  show p@(Pair _ _) = "(" ++ showPair p ++ ")"
     where
       showPair (Pair a b)
         | isPair b = show a ++ " " ++ showPair b
@@ -49,7 +49,7 @@ instance Show Value where
 instance Eq Value where
   Applicative a == Applicative b = a == b
   Boolean a == Boolean b = a == b
-  Environment aht aps == Environment bht bps = False
+  Environment _ _ == Environment _ _ = False -- TODO?
   Ignore == Ignore = True
   Inert == Inert = True
   Null == Null = True
@@ -60,6 +60,7 @@ instance Eq Value where
   Pair ah at == Pair bh bt = ah == bh && at == bt
   String a == String b = a == b
   Symbol a == Symbol b = a == b
+  _ == _ = False
 
 
 newEnvironment :: [Value] -> IO Value

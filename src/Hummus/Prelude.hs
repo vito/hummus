@@ -81,36 +81,36 @@ new = do
       Applicative c -> return c
       _ -> error ("not an applicative: " ++ show a)
 
-  defn env "=?"  $ \as e ->
+  defn env "=?"  $ \as _ ->
     let allEq (a:b:cs) = a == b && allEq (b:cs)
         allEq _ = True
     in return (Boolean (allEq (toList as)))
 
-  defn env "max"  $ \as e ->
+  defn env "max"  $ \as _ ->
     let nums = map (\(Number n) -> n) (toList as)
     in return (Number (maximum nums))
 
-  defn env "<?"  $ \(Pair (Number a) (Pair (Number b) _)) e -> do
+  defn env "<?"  $ \(Pair (Number a) (Pair (Number b) _)) _ ->
     return (Boolean (a < b))
 
-  defn env ">?"  $ \(Pair (Number a) (Pair (Number b) _)) e -> do
+  defn env ">?"  $ \(Pair (Number a) (Pair (Number b) _)) _ ->
     return (Boolean (a > b))
 
-  defn env "<=?"  $ \(Pair (Number a) (Pair (Number b) _)) e -> do
+  defn env "<=?"  $ \(Pair (Number a) (Pair (Number b) _)) _ ->
     return (Boolean (a <= b))
 
-  defn env ">=?"  $ \(Pair (Number a) (Pair (Number b) _)) e -> do
+  defn env ">=?"  $ \(Pair (Number a) (Pair (Number b) _)) _ ->
     return (Boolean (a >= b))
 
-  defn env "+"  $ \as e ->
+  defn env "+"  $ \as _ ->
     let nums = map (\(Number n) -> n) (toList as)
     in return (Number (sum nums))
 
-  defn env "*"  $ \as e ->
+  defn env "*"  $ \as _ ->
     let nums = map (\(Number n) -> n) (toList as)
     in return (Number (product nums))
 
-  defn env "-"  $ \(Pair (Number a) (Pair (Number b) _)) e ->
+  defn env "-"  $ \(Pair (Number a) (Pair (Number b) _)) _ ->
     return (Number (a - b))
 
   defn env "print" $ \(Pair a _) _ -> do
@@ -128,8 +128,8 @@ new = do
   bootFile <- getDataFileName "kernel/boot.hms"
   boot <- BS.readFile bootFile
   case parseOnly sexps boot of
-    Right sexps ->
-      mapM_ (evaluate env) sexps
+    Right ss ->
+      mapM_ (evaluate env) ss
 
     Left e ->
       error e

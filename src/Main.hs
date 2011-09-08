@@ -47,7 +47,7 @@ repl p e = do
     finish ss = do
       liftIO (evaluateSequence e ss) >>= outputStrLn . show
       repl "" e
-      
+
 
 avgRuns :: Int -> (IO ()) -> IO NominalDiffTime
 avgRuns i x = do

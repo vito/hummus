@@ -17,7 +17,7 @@ evaluate env (Pair a b) = do
           as <- evaluateAll env b
           apply env c as
 
-        _ -> error ("cannot apply: " ++ show x)
+        _ -> error ("not a combiner: " ++ show x)
 evaluate env (Symbol s) = do
   mv <- fetch env s
   case mv of
@@ -25,7 +25,7 @@ evaluate env (Symbol s) = do
     Nothing -> error ("undefined: " ++ s)
 evaluate env o@(Operative { oStaticEnvironment = Nothing }) =
   return o { oStaticEnvironment = Just env }
-evaluate env x = return x
+evaluate _ x = return x
 
 evaluateSequence :: Value -> [Value] -> IO Value
 evaluateSequence _ [] = return Null
@@ -37,7 +37,7 @@ evaluateAll env (Pair a b) = do
   ea <- evaluate env a
   eb <- evaluateAll env b
   return (Pair ea eb)
-evaluateAll env x = return x
+evaluateAll _ x = return x
 
 apply :: Value -> Value -> Value -> IO Value
 apply env (CoreOperative f) as = f as env
@@ -48,6 +48,7 @@ apply env (Operative fs ef b se) as = do
   define newEnv ef env
 
   evaluate newEnv b
+apply _ v _ = error ("cannot apply: " ++ show v)
 
 define :: Value -> Value -> Value -> IO ()
 define env@(Environment ht _) p v =
@@ -82,3 +83,4 @@ fetch (Environment ht ps) n = do
       case catMaybes up of
         (x:_) -> return (Just x)
         [] -> return Nothing
+fetch v n = error ("cannot fetch " ++ show n ++ " from " ++ show v)
