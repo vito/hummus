@@ -162,10 +162,10 @@
     (car (drop n xs))))
 
 (define reduce
-  (lambda (f a xs)
+  (lambda (f xs a)
     (if (null? xs)
       a
-      (reduce f (f a (car xs)) (cdr xs)))))
+      (reduce f (cdr xs) (f a (car xs))))))
 
 (define append
   (lambda xss
@@ -175,4 +175,111 @@
           ys
           (cons (car xs) (append2 (cdr xs) ys)))))
 
-    (reduce append2 () xss)))
+    (reduce append2 xss ())))
+
+(define list-neighbors
+  (lambda (xs)
+    (if (>? (length xs) 1)
+      (cons (list (car xs) (cadr xs)) (list-neighbors (cdr xs)))
+      ())))
+
+(define filter
+  (lambda (accept? xs)
+    (if (null? xs)
+      ()
+      (let (((a . bs) xs))
+        (if (apply accept? (list a))
+          (cons a (filter accept? bs))
+          (filter accept? bs))))))
+
+(define lookup
+  (lambda (n ps)
+    (if (null? ps)
+      (#f)
+      (let ((((k v) . rest) ps))
+        (if (equal? n k)
+          (cons #t v)
+          (lookup n rest))))))
+
+(define member?
+  (lambda (x xs)
+    (cond
+      ((null? xs) #f)
+      ((equal? x (car xs)) #t)
+      (#t (member? x (cdr xs))))))
+
+(define get-current-environment (wrap (vau () e e)))
+
+(define make-hummus-static-environment
+  (lambda () (get-current-environment)))
+
+(define let*
+  (vau (bindings . body) env
+    (eval (if (null? bindings)
+            (list* let bindings body)
+            (list let (list (car bindings))
+                  (list* let* (cdr bindings) body)))
+          env)))
+
+(define letrec
+  (vau (bindings . body) env
+    (eval (list* let ()
+                 (list define
+                   (map car bindings)
+                   (cons list (map cadr bindings)))
+                 body)
+          env)))
+
+(define letrec*
+  (vau (bindings . body) env
+    (eval (if (null? bindings)
+            (list* letrec bindings body)
+            (list letrec (list (car bindings))
+                  (list* letrec* (cdr bindings) body)))
+          env)))
+
+(define let-redirect
+  (vau (exp bindings . body) env
+    (eval (cons (eval (list* lambda (map car bindings) body) (eval exp env))
+                (map cadr bindings)) env)))
+
+(define let-safe
+  (vau (bindings . body) env
+    (eval (list* let-redirect
+                 (make-hummus-static-environment)
+                 bindings
+                 body)
+          env)))
+
+(define remote-eval
+  (vau (o e) d
+    (eval o (eval e d))))
+
+(define bindings->environment
+  (vau bs env
+    (eval (list let-redirect
+                (make-environment)
+                bindings
+                (list get-current-environment))
+          env)))
+
+(define set!
+  (vau (target formals values) env
+    (eval (list define formals (list (unwrap eval) values env))
+          (eval target env))))
+
+(define provide!
+  (vau (symbols . body) env
+    (eval (list define symbols
+                (list let ()
+                      (cons sequence body)
+                      (cons list symbols)))
+          env)))
+
+(define import!
+  (vau (exp . symbols) env
+    (eval (list set! env symbols (cons list symbols))
+          (eval exp env))))
+
+(define for-each
+  (wrap (vau x env (apply map x env) #inert)))

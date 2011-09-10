@@ -65,6 +65,11 @@ new = do
   defn env "make-environment"  $ \parents _ ->
     newEnvironment (toList parents)
 
+  def env "binds?" $ \(Pair a bs) e -> do
+    e' <- evaluate e a
+    ss <- mapM (\(Symbol s) -> binds e' s) (toList bs)
+    return (Boolean (and ss))
+
   def env "define" $ \(Pair a (Pair b _)) e -> do
     v <- evaluate e b
     define e a v

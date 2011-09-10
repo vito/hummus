@@ -1,6 +1,6 @@
 module Hummus.Runtime where
 
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, isJust)
 import qualified Data.HashTable.IO as H
 
 import Hummus.Types
@@ -72,6 +72,9 @@ define env@(Environment ht _) p v =
 
     _ -> error ("unknown pattern: " ++ show p)
 define _ _ _ = error "invalid definition target"
+
+binds :: Value -> String -> IO Bool
+binds e n = fmap isJust (fetch e n)
 
 fetch :: Value -> String -> IO (Maybe Value)
 fetch (Environment ht ps) n = do
