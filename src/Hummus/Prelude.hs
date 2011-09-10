@@ -21,7 +21,7 @@ new = do
   defn env "eq?"  $ \(Pair a (Pair b _)) _ ->
     return (Boolean (a == b))
 
-  define env (Symbol "equal?") (Symbol "eq?")
+  evaluate env (Symbol "eq?") >>= define env (Symbol "equal?")
 
   defn env "symbol?"  $ \(Pair a _) _ ->
     return (Boolean (isSymbol a))

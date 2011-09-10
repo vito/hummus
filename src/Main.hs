@@ -3,7 +3,6 @@ module Main where
 
 import Control.Monad.Trans (liftIO)
 import Data.Attoparsec
-import Data.Time
 import System.Console.Haskeline
 import qualified Data.ByteString as BS
 
