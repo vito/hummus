@@ -195,7 +195,7 @@
 (define lookup
   (lambda (n ps)
     (if (null? ps)
-      (#f)
+      (cons #f ())
       (let ((((k v) . rest) ps))
         (if (equal? n k)
           (cons #t v)
