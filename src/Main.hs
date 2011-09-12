@@ -1,9 +1,12 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes #-}
 module Main where
 
-import Control.Monad.Trans (liftIO)
+import Control.Monad.Trans
 import Data.Attoparsec
+import Prelude hiding (catch)
 import System.Console.Haskeline
+import System.Environment (getEnv)
+import System.FilePath ((</>))
 import qualified Data.ByteString as BS
 
 import Hummus.Types
@@ -13,9 +16,25 @@ import qualified Hummus.Prelude as Prelude
 
 
 main :: IO ()
-main = Prelude.new >>= runInputT defaultSettings . repl ""
+main = do
+  home <- getEnv "HOME"
 
-repl :: String -> Value -> InputT IO ()
+  runVM $ do
+    Prelude.fromGround $ \e -> do
+      runInputT
+        (defaultSettings { historyFile = Just (home </> ".hummus_history") })
+        (repl "" e)
+      return Inert
+
+    return ()
+
+-- TODO: super hacky
+instance MonadException (VM ans) where
+  catch x _ = x -- TODO
+  block x = x -- TODO
+  unblock x = x -- TODO
+
+repl :: String -> Value ans -> InputT (VM ans) ()
 repl p e = do
   mi <- getInputLine (if null p then "Hummus> " else "....... ")
 
@@ -44,5 +63,5 @@ repl p e = do
     Nothing -> return ()
   where
     finish ss = do
-      liftIO (evaluateSequence e ss) >>= outputStrLn . show
+      lift (evaluateSequence e ss) >>= outputStrLn . show
       repl "" e

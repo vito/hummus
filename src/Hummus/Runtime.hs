@@ -1,23 +1,19 @@
 module Hummus.Runtime where
 
+import Control.Monad
+import Control.Monad.Trans
 import Data.Maybe (catMaybes, isJust)
 import qualified Data.HashTable.IO as H
 
 import Hummus.Types
 
 
-evaluate :: Value -> Value -> IO Value
+evaluate :: Value ans -> Value ans -> VM ans (Value ans)
 evaluate env (Pair a b) = do
   x <- evaluate env a
-  if isOperative x
+  if isOperative x || isApplicative x
     then apply env x b
-    else
-      case x of
-        Applicative c -> do
-          as <- evaluateAll env b
-          apply env c as
-
-        _ -> error ("not a combiner: " ++ show x)
+    else error ("not a combiner: " ++ show x)
 evaluate env (Symbol s) = do
   mv <- fetch env s
   case mv of
@@ -27,19 +23,19 @@ evaluate env o@(Operative { oStaticEnvironment = Nothing }) =
   return o { oStaticEnvironment = Just env }
 evaluate _ x = return x
 
-evaluateSequence :: Value -> [Value] -> IO Value
+evaluateSequence :: Value ans -> [Value ans] -> VM ans (Value ans)
 evaluateSequence _ [] = return Null
 evaluateSequence e [s] = evaluate e s
 evaluateSequence e (s:ss) = evaluate e s >> evaluateSequence e ss
 
-evaluateAll :: Value -> Value -> IO Value
+evaluateAll :: Value ans -> Value ans -> VM ans (Value ans)
 evaluateAll env (Pair a b) = do
   ea <- evaluate env a
   eb <- evaluateAll env b
   return (Pair ea eb)
 evaluateAll _ x = return x
 
-apply :: Value -> Value -> Value -> IO Value
+apply :: Value ans -> Value ans -> Value ans -> VM ans (Value ans)
 apply env (CoreOperative f) as = f as env
 apply env (Operative fs ef b se) as = do
   newEnv <- newEnvironment (catMaybes [se])
@@ -48,14 +44,17 @@ apply env (Operative fs ef b se) as = do
   define newEnv ef env
 
   evaluate newEnv b
+apply env (Applicative x) vs = do
+  as <- evaluateAll env vs
+  apply env x as
 apply _ v _ = error ("cannot apply: " ++ show v)
 
-define :: Value -> Value -> Value -> IO ()
+define :: Value ans -> Value ans -> Value ans -> VM ans ()
 define env@(Environment ht _) p v =
   case p of
     Ignore -> return ()
 
-    Symbol n -> H.insert ht n v
+    Symbol n -> liftIO (H.insert ht n v)
 
     Null ->
       case v of
@@ -73,12 +72,12 @@ define env@(Environment ht _) p v =
     _ -> error ("unknown pattern: " ++ show p)
 define _ _ _ = error "invalid definition target"
 
-binds :: Value -> String -> IO Bool
-binds e n = fmap isJust (fetch e n)
+binds :: Value ans -> String -> VM ans Bool
+binds e n = liftM isJust (fetch e n)
 
-fetch :: Value -> String -> IO (Maybe Value)
+fetch :: Value ans -> String -> VM ans (Maybe (Value ans))
 fetch (Environment ht ps) n = do
-  l <- H.lookup ht n
+  l <- liftIO (H.lookup ht n)
   case l of
     Just v -> return (Just v)
     Nothing -> do

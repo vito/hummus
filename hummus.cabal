@@ -29,6 +29,8 @@ executable hummus
     attoparsec,
     base,
     bytestring,
+    CC-delcont,
+    filepath,
     haskeline,
     hashtables,
     mtl,

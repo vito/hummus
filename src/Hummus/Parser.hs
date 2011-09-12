@@ -15,16 +15,16 @@ isSpace = C.isSpace . toEnum . fromEnum
 whitespace :: Parser ()
 whitespace = skipWhile isSpace
 
-sexps :: Parser [Value]
+sexps :: Parser [Value ans]
 sexps = manyTill (whitespace *> sexp <* whitespace) endOfInput <?> "sexps"
 
-sexp :: Parser Value
+sexp :: Parser (Value ans)
 sexp = choice [hNumber, hString, hConstant, hSymbol, hList] <?> "sexp"
 
 toString :: BS.ByteString -> String
 toString = map (toEnum . fromEnum) . BS.unpack
 
-hNumber :: Parser Value
+hNumber :: Parser (Value ans)
 hNumber = (do
   d <- satisfy (inClass "0-9")
   n <- loop (fromIntegral (fromEnum d - fromEnum '0'))
@@ -38,7 +38,7 @@ hNumber = (do
       , return n
       ]
 
-hString :: Parser Value
+hString :: Parser (Value ans)
 hString = (string "\"" *> fmap (String . toString) inString) <?> "string"
   where
     inString = do
@@ -54,7 +54,7 @@ hString = (string "\"" *> fmap (String . toString) inString) <?> "string"
         , fail "unknown escape"
         ]
 
-hConstant :: Parser Value
+hConstant :: Parser (Value ans)
 hConstant = string "#" *>
   choice
     [ string "t" >> return (Boolean True)
@@ -63,12 +63,12 @@ hConstant = string "#" *>
     , string "inert" >> return Inert
     ] <?> "constant"
 
-hSymbol :: Parser Value
+hSymbol :: Parser (Value ans)
 hSymbol = (fmap (Symbol . toString) $ takeWhile1 validChar) <?> "symbol"
   where
     validChar = inClass  "a-zA-Z0-9-<>/?\\|~!@#$%^&*=+_-"
 
-hList :: Parser Value
+hList :: Parser (Value ans)
 hList = (string "(" *> pairs <* string ")") <?> "list"
   where
     pairs = whitespace *> choice

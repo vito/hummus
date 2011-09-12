@@ -1,29 +1,54 @@
+{-# LANGUAGE FlexibleInstances, MultiParamTypeClasses, RankNTypes, GADTs,
+             UndecidableInstances #-}
 module Hummus.Types where
 
+import Control.Monad.CC
+import Control.Monad.CC.Prompt
+import Control.Monad.Trans
 import qualified Data.HashTable.IO as H
 
 
-data Value
-  = Applicative Value
+newtype VM ans a = VM { unVM :: CCT ans IO a }
+
+runVM :: (forall ans. VM ans a) -> IO a
+runVM v = runCCT (unVM v)
+
+instance Monad (VM ans) where
+  return = VM . return
+  x >>= y = VM (unVM x >>= unVM . y)
+
+instance MonadIO (VM ans) where
+  liftIO x = VM (liftIO x)
+
+instance MonadDelimitedCont (Prompt ans) (SubCont ans IO) (VM ans) where
+  newPrompt = VM newPrompt
+  pushPrompt p x = VM (pushPrompt p (unVM x))
+  withSubCont p f = VM (withSubCont p (unVM . f))
+  pushSubCont s x = VM (pushSubCont s (unVM x))
+
+data Value ans
+  = Applicative (Value ans)
   | Boolean Bool
-  | Environment (H.LinearHashTable String Value) [Value]
+  | Environment (H.LinearHashTable String (Value ans)) [Value ans]
   | Ignore
   | Inert
   | Null
   | Number Integer
   | Operative
-      { oFormals :: Value
-      , oEnvironmentFormal :: Value
-      , oBody :: Value
-      , oStaticEnvironment :: Maybe Value
+      { oFormals :: Value ans
+      , oEnvironmentFormal :: Value ans
+      , oBody :: Value ans
+      , oStaticEnvironment :: Maybe (Value ans)
       }
-  | CoreOperative (Value -> Value -> IO Value)
-  | Pair Value Value
+  | CoreOperative (Value ans -> Value ans -> VM ans (Value ans))
+  | Pair (Value ans) (Value ans)
+  | Prompt (Prompt ans (Value ans))
   | String String
+  | SubContinuation (SubCont ans IO (Value ans) (Value ans))
   | Symbol String
 
 
-instance Show Value where
+instance forall ans. Show (Value ans) where
   show (Applicative v) = "<applicative " ++ show v ++ ">"
   show (Boolean True) = "#t"
   show (Boolean False) = "#f"
@@ -42,11 +67,13 @@ instance Show Value where
         | isNull b = show a
         | otherwise = show a ++ " . " ++ show b
       showPair x = show x
+  show (Prompt _) = "<prompt>"
   show (String s) = show s
+  show (SubContinuation _) = "<subcontinuation>"
   show (Symbol s) = s
 
 
-instance Eq Value where
+instance forall ans. Eq (Value ans) where
   Applicative a == Applicative b = a == b
   Boolean a == Boolean b = a == b
   Environment _ _ == Environment _ _ = False -- TODO?
@@ -58,68 +85,76 @@ instance Eq Value where
     afs == bfs && aef == bef && ab == bb && ase == bse
   CoreOperative _ == CoreOperative _ = False
   Pair ah at == Pair bh bt = ah == bh && at == bt
+  Prompt a == Prompt b =
+    case eqPrompt a b of
+      EQU -> True
+      NEQ -> False
   String a == String b = a == b
   Symbol a == Symbol b = a == b
   _ == _ = False
 
 
-newEnvironment :: [Value] -> IO Value
+newEnvironment :: [Value ans] -> VM ans (Value ans)
 newEnvironment ps = do
-  ht <- H.new
+  ht <- liftIO H.new
   return (Environment ht ps)
 
 
-toList :: Value -> [Value]
+toList :: Value ans -> [Value ans]
 toList (Pair a b) = a : toList b
 toList Null = []
 toList x = error ("cannot toList: " ++ show x)
 
 
-isTrue :: Value -> Bool
+isTrue :: Value ans -> Bool
 isTrue (Boolean True) = True
 isTrue _ = False
 
-isFalse :: Value -> Bool
+isFalse :: Value ans -> Bool
 isFalse (Boolean False) = True
 isFalse _ = False
 
-isBoolean :: Value -> Bool
+isBoolean :: Value ans -> Bool
 isBoolean (Boolean _) = True
 isBoolean _ = False
 
-isApplicative :: Value -> Bool
+isApplicative :: Value ans -> Bool
 isApplicative (Applicative _) = True
 isApplicative _ = False
 
-isSymbol :: Value -> Bool
+isSymbol :: Value ans -> Bool
 isSymbol (Symbol _) = True
 isSymbol _ = False
 
-isIgnore :: Value -> Bool
+isIgnore :: Value ans -> Bool
 isIgnore Ignore = True
 isIgnore _ = False
 
-isNull :: Value -> Bool
+isNull :: Value ans -> Bool
 isNull Null = True
 isNull _ = False
 
-isNumber :: Value -> Bool
+isNumber :: Value ans -> Bool
 isNumber (Number _) = True
 isNumber _ = False
 
-isPair :: Value -> Bool
+isPair :: Value ans -> Bool
 isPair (Pair _ _) = True
 isPair _ = False
 
-isEnvironment :: Value -> Bool
+isEnvironment :: Value ans -> Bool
 isEnvironment (Environment _ _) = True
 isEnvironment _ = False
 
-isInert :: Value -> Bool
+isInert :: Value ans -> Bool
 isInert Inert = True
 isInert _ = False
 
-isOperative :: Value -> Bool
+isOperative :: Value ans -> Bool
 isOperative (CoreOperative _) = True
 isOperative (Operative {}) = True
 isOperative _ = False
+
+isPrompt :: Value ans -> Bool
+isPrompt (Prompt _) = True
+isPrompt _ = False

@@ -1,5 +1,8 @@
+{-# LANGUAGE RankNTypes #-}
 module Hummus.Prelude where
 
+import Control.Monad.CC
+import Control.Monad.Trans
 import Data.Attoparsec
 import Data.Time
 import qualified Data.ByteString as BS
@@ -11,9 +14,41 @@ import Hummus.Runtime
 import Paths_hummus
 
 
-new :: IO Value
+new :: VM ans (Value ans)
 new = do
   env <- newEnvironment []
+
+  defn env "reset" $ \(Pair b _) e ->
+    reset $ \p ->
+      apply e b (Pair (Prompt p) Null)
+
+  defn env "shift" $ \(Pair a (Pair b _)) e -> do
+    Prompt p <- evaluate e a
+    shift p $ \f ->
+      let app = Applicative . CoreOperative $ \(Pair x _) _ -> f (return x)
+      in apply e b (Pair app Null)
+
+  defn env "control" $ \(Pair a (Pair b _)) e -> do
+    Prompt p <- evaluate e a
+    control p $ \f ->
+      let app = Applicative . CoreOperative $ \(Pair x _) _ -> f (return x)
+      in apply e b (Pair app Null)
+
+  defn env "shift0" $ \(Pair a (Pair b _)) e -> do
+    Prompt p <- evaluate e a
+    shift0 p $ \f ->
+      let app = Applicative . CoreOperative $ \(Pair x _) _ -> f (return x)
+      in apply e b (Pair app Null)
+
+  defn env "control0" $ \(Pair a (Pair b _)) e -> do
+    Prompt p <- evaluate e a
+    control0 p $ \f ->
+      let app = Applicative . CoreOperative $ \(Pair x _) _ -> f (return x)
+      in apply e b (Pair app Null)
+
+  defn env "abort" $ \(Pair a (Pair b _)) e -> do
+    Prompt p <- evaluate e a
+    abort p (evaluate e b)
 
   defn env "boolean?"  $ \(Pair a _) _ ->
     return (Boolean (isBoolean a))
@@ -92,6 +127,22 @@ new = do
       Applicative c -> return c
       _ -> error ("not an applicative: " ++ show a)
 
+  defn env "make-prompt" $ \Null _ -> do
+    x <- newPrompt
+    return (Prompt x)
+
+  def env "push-prompt" $ \(Pair a bs) e -> do
+    Prompt p <- evaluate e a
+    pushPrompt p (evaluateSequence e (toList bs))
+
+  defn env "with-sub-cont" $ \(Pair (Prompt p) (Pair x Null)) e -> do
+    withSubCont p $ \s ->
+      apply e x (Pair (SubContinuation s) Null)
+
+  defn env "push-sub-cont" $ \(Pair a bs) e -> do
+    SubContinuation s <- evaluate e a
+    pushSubCont s (evaluateSequence e (toList bs))
+
   defn env "=?"  $ \as _ ->
     let allEq (a:b:cs) = a == b && allEq (b:cs)
         allEq _ = True
@@ -125,19 +176,19 @@ new = do
     return (Number (a - b))
 
   defn env "print" $ \(Pair a _) _ -> do
-    print a
+    liftIO (print a)
     return Inert
 
   def env "time" $ \(Pair a _) e -> do
-    before <- getCurrentTime
+    before <- liftIO getCurrentTime
     x <- evaluate e a
-    after <- getCurrentTime
-    print x
-    print (diffUTCTime after before)
+    after <- liftIO getCurrentTime
+    liftIO (print x)
+    liftIO (print (diffUTCTime after before))
     return Inert
 
-  bootFile <- getDataFileName "kernel/boot.hms"
-  boot <- BS.readFile bootFile
+  bootFile <- liftIO (getDataFileName "kernel/boot.hms")
+  boot <- liftIO (BS.readFile bootFile)
   case parseOnly sexps boot of
     Right ss ->
       mapM_ (evaluate env) ss
@@ -147,5 +198,16 @@ new = do
 
   return env
  where
+  def :: Value ans -> String -> (Value ans -> Value ans -> VM ans (Value ans)) -> VM ans ()
   def e n f = define e (Symbol n) (CoreOperative f)
+
+  defn :: Value ans -> String -> (Value ans -> Value ans -> VM ans (Value ans)) -> VM ans ()
   defn e n f = define e (Symbol n) (Applicative $ CoreOperative f)
+
+fromGround :: (Value ans -> VM ans (Value ans)) -> VM ans (Value ans)
+fromGround x = do
+  e <- new
+
+  reset $ \root -> do
+    define e (Symbol "root-prompt") (Prompt root)
+    x e
