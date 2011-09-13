@@ -3,17 +3,25 @@ module Hummus.Parser where
 
 import Control.Applicative hiding (many)
 import Data.Attoparsec as A
-import qualified Data.Char as C
+import Data.Attoparsec.Char8 (isSpace_w8, isDigit_w8)
 import qualified Data.ByteString as BS
 
 import Hummus.Types
 
 
-isSpace :: Enum a => a -> Bool
-isSpace = C.isSpace . toEnum . fromEnum
-
 whitespace :: Parser ()
-whitespace = skipWhile isSpace
+whitespace = skipMany $ choice
+  [ takeWhile1 isSpace_w8 >> return ()
+  , skipMany1 comment
+  ]
+
+comment :: Parser ()
+comment = do
+  string ";"
+  manyTill anyWord8 (endOfLine <|> endOfInput)
+  return ()
+  where
+    endOfLine = string "\n" >> return ()
 
 sexps :: Parser [Value ans]
 sexps = manyTill (whitespace *> sexp <* whitespace) endOfInput <?> "sexps"
@@ -26,14 +34,14 @@ toString = map (toEnum . fromEnum) . BS.unpack
 
 hNumber :: Parser (Value ans)
 hNumber = (do
-  d <- satisfy (inClass "0-9")
+  d <- satisfy isDigit_w8
   n <- loop (fromIntegral (fromEnum d - fromEnum '0'))
   return (Number (fromIntegral n))) <?> "number"
   where
     loop :: Integer -> Parser Integer
     loop n = choice
       [ do
-          d <- satisfy (inClass "0-9")
+          d <- satisfy isDigit_w8
           loop (n * 10 + (fromIntegral $ fromEnum d - fromEnum '0'))
       , return n
       ]
