@@ -216,6 +216,9 @@ new = do
     liftIO (print (diffUTCTime after before))
     return Inert
     
+  def env "loop" $ \as e ->
+    forever $ evaluateSequence e (toList as)
+
   defn env "get-hummus-data-file" $ \(Pair (String fn) _) _ -> do
     liftM String (liftIO (getDataFileName fn))
 
