@@ -1,0 +1,42 @@
+(provide! (this make-object)
+  (define this (make-dynvar))
+
+  (defn (make-object-environment e)
+    (let ((obj (let-redirect e () (get-current-environment))))
+      (set! obj *slots* (make-environment))
+
+      (set! obj *parent*
+        ; TODO: error
+        (vau #ignore #ignore #ignore))
+
+      (set! obj property
+        (vau (x y) env
+          (eval (list set! (remote-eval *slots* obj) x (eval y env)) obj)
+          (apply (wrap set!)
+                (list obj x
+                      (eval (list lambda () x) (remote-eval *slots* obj)))
+                obj)))
+
+      (set! obj delegate-to
+        (lambda (to)
+          (set! obj *parent* to)))
+
+      (set! obj set
+        (vau (where what) e
+          (eval (list set! (remote-eval *slots* obj) where what) e)))
+
+      obj))
+
+  (define make-object
+    (vau es e
+      (let ((obj (make-object-environment e)))
+        (eval (cons list es) obj)
+        (define self
+          (vau (fun . args) from
+            (let (((where . name) (if (pair? fun) fun (cons self fun))))
+              (if (apply (wrap binds?) (list obj name))
+                (with ((this where))
+                  (eval (list* (eval name obj) args) from))
+                (eval (list* (remote-eval *parent* obj) (cons where name) args)
+                      from)))))
+        self))))

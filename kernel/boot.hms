@@ -292,3 +292,5 @@
                     (cons lambda (cons as body)))
               e))
       (eval (cons define (cons name body)) e))))
+
+(load (get-hummus-data-file "kernel/object.hms"))

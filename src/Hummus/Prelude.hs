@@ -216,6 +216,18 @@ new = do
     liftIO (print (diffUTCTime after before))
     return Inert
     
+  defn env "get-hummus-data-file" $ \(Pair (String fn) _) _ -> do
+    liftM String (liftIO (getDataFileName fn))
+
+  defn env "load" $ \(Pair (String fn) _) e -> do
+    source <- liftIO (BS.readFile fn)
+    case parseOnly sexps source of
+      Right ss ->
+        evaluateSequence e ss
+
+      Left e ->
+        error e
+
   bootFile <- liftIO (getDataFileName "kernel/boot.hms")
   boot <- liftIO (BS.readFile bootFile)
   case parseOnly sexps boot of
