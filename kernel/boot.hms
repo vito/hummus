@@ -283,3 +283,12 @@
 
 (define for-each
   (wrap (vau x env (apply map x env) #inert)))
+
+(define defn
+  (vau (name . body) e
+    (if (pair? name)
+      (let (((n . as) name))
+        (eval (list define n
+                    (cons lambda (cons as body)))
+              e))
+      (eval (cons define (cons name body)) e))))
