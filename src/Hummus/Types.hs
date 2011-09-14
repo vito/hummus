@@ -3,6 +3,7 @@
 module Hummus.Types where
 
 import Control.Monad.CC
+import Control.Monad.CC.Dynvar
 import Control.Monad.CC.Prompt
 import Control.Monad.Trans
 import qualified Data.HashTable.IO as H
@@ -29,6 +30,7 @@ instance MonadDelimitedCont (Prompt ans) (SubCont ans IO) (VM ans) where
 data Value ans
   = Applicative (Value ans)
   | Boolean Bool
+  | Dynvar (Dynvar (VM ans) (Value ans))
   | Environment (H.LinearHashTable String (Value ans)) [Value ans]
   | Ignore
   | Inert
@@ -52,6 +54,7 @@ instance forall ans. Show (Value ans) where
   show (Applicative v) = "<applicative " ++ show v ++ ">"
   show (Boolean True) = "#t"
   show (Boolean False) = "#f"
+  show (Dynvar _) = "<dynamic variable>"
   show (Environment _ _) = "<environment>"
   show Ignore = "#ignore"
   show Inert = "#inert"
@@ -76,7 +79,6 @@ instance forall ans. Show (Value ans) where
 instance forall ans. Eq (Value ans) where
   Applicative a == Applicative b = a == b
   Boolean a == Boolean b = a == b
-  Environment _ _ == Environment _ _ = False -- TODO?
   Ignore == Ignore = True
   Inert == Inert = True
   Null == Null = True
@@ -158,3 +160,10 @@ isOperative _ = False
 isPrompt :: Value ans -> Bool
 isPrompt (Prompt _) = True
 isPrompt _ = False
+
+isDynvar :: Value ans -> Bool
+isDynvar (Dynvar _) = True
+isDynvar _ = False
+
+isCombiner :: Value ans -> Bool
+isCombiner x = isApplicative x || isOperative x || isDynvar x

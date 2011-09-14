@@ -1,7 +1,9 @@
 {-# LANGUAGE RankNTypes #-}
 module Hummus.Prelude where
 
+import Control.Monad
 import Control.Monad.CC
+import Control.Monad.CC.Dynvar
 import Control.Monad.Trans
 import Data.Attoparsec
 import Data.Time
@@ -21,6 +23,27 @@ new = do
   defn env "reset" $ \(Pair b _) e ->
     reset $ \p ->
       apply e b (Pair (Prompt p) Null)
+
+  defn env "make-dynvar" $ \Null _ ->
+    liftM Dynvar dnew
+
+  defn env "with-dynvar" $ \(Pair b _) e -> do
+    dnew >>= \d ->
+      dlet d Null $ apply e b (Pair (Dynvar d) Null)
+
+  defn env "get" $ \(Pair (Dynvar d) Null) _ ->
+    dref d
+
+  defn env "put!" $ \(Pair (Dynvar d) (Pair b Null)) _ ->
+    dset d b
+
+  def env "with" $ \(Pair as bs) e -> do
+    let letDyn ([a, b]:as) bs = do
+          Dynvar d <- evaluate e a
+          v <- evaluate e b
+          dlet d v (letDyn as bs)
+        letDyn [] bs = evaluateSequence e (toList bs)
+    letDyn (map toList (toList as)) bs
 
   defn env "shift" $ \(Pair a (Pair b _)) e -> do
     Prompt p <- evaluate e a
@@ -97,7 +120,7 @@ new = do
   defn env "eval"  $ \(Pair a (Pair b _)) _ ->
     evaluate b a
 
-  defn env "make-environment"  $ \parents _ ->
+  defn env "make-environment" $ \parents _ ->
     newEnvironment (toList parents)
 
   def env "binds?" $ \(Pair a bs) e -> do
@@ -110,11 +133,17 @@ new = do
     define e a v
     return Inert
 
-  defn env "operative?"  $ \(Pair a _) _ ->
+  defn env "operative?" $ \(Pair a _) _ ->
     return (Boolean (isOperative a))
 
-  defn env "applicative?"  $ \(Pair a _) _ ->
+  defn env "applicative?" $ \(Pair a _) _ ->
     return (Boolean (isApplicative a))
+
+  defn env "dynvar?" $ \(Pair a _) _ ->
+    return (Boolean (isDynvar a))
+
+  defn env "combiner?" $ \as _ ->
+    return (Boolean (and (map isCombiner (toList as))))
 
   def env "vau" $ \(Pair a (Pair b (Pair c _))) e ->
     return (Operative a b c (Just e))
@@ -186,7 +215,7 @@ new = do
     liftIO (print x)
     liftIO (print (diffUTCTime after before))
     return Inert
-
+    
   bootFile <- liftIO (getDataFileName "kernel/boot.hms")
   boot <- liftIO (BS.readFile bootFile)
   case parseOnly sexps boot of

@@ -1,6 +1,7 @@
 module Hummus.Runtime where
 
 import Control.Monad
+import Control.Monad.CC.Dynvar
 import Control.Monad.Trans
 import Data.Maybe (catMaybes, isJust)
 import qualified Data.HashTable.IO as H
@@ -11,7 +12,7 @@ import Hummus.Types
 evaluate :: Value ans -> Value ans -> VM ans (Value ans)
 evaluate env (Pair a b) = do
   x <- evaluate env a
-  if isOperative x || isApplicative x
+  if isCombiner x
     then apply env x b
     else error ("not a combiner: " ++ show x)
 evaluate env (Symbol s) = do
@@ -47,6 +48,11 @@ apply env (Operative fs ef b se) as = do
 apply env (Applicative x) vs = do
   as <- evaluateAll env vs
   apply env x as
+apply env (Dynvar d) as = do
+  v <- dref d
+  if isCombiner v
+    then apply env v as
+    else return v
 apply _ v _ = error ("cannot apply: " ++ show v)
 
 define :: Value ans -> Value ans -> Value ans -> VM ans ()
