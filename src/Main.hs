@@ -5,7 +5,7 @@ import Control.Monad.Trans
 import Data.Attoparsec
 import Prelude hiding (catch)
 import System.Console.Haskeline
-import System.Environment (getEnv)
+import System.Environment (getArgs, getEnv)
 import System.FilePath ((</>))
 import qualified Data.ByteString as BS
 
@@ -17,13 +17,25 @@ import qualified Hummus.Prelude as Prelude
 
 main :: IO ()
 main = do
-  home <- getEnv "HOME"
+  as <- getArgs
 
   runVM $ do
     Prelude.fromGround $ \e -> do
-      runInputT
-        (defaultSettings { historyFile = Just (home </> ".hummus_history") })
-        (repl "" e)
+      case as of
+        [] -> do
+          home <- liftIO (getEnv "HOME")
+          runInputT
+            (defaultSettings { historyFile = Just (home </> ".hummus_history") })
+            (repl "" e)
+
+        [f] -> do
+          s <- liftIO (BS.readFile f)
+          case parseOnly sexps s of
+            Right ss -> mapM_ (evaluate e) ss
+            Left m -> error m
+
+        _ -> error "unknown argument form"
+
       return Inert
 
     return ()
