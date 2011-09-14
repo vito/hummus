@@ -1,0 +1,95 @@
+(defn (make-foo given-a given-b with-foo?)
+  (make-object
+    (property a given-a)
+    (property b given-b)
+
+    (defn (double-a)
+      (this increase-a-by (this a)))
+
+    (defn (double-b)
+      (this increase-b-by (this b)))
+
+    (defn (increase-a-by by)
+      (this set a (+ (this a) by)))
+
+    (defn (increase-b-by by)
+      (this set b (+ (this b) by)))
+
+    (if with-foo?
+      (defn (foo) (this a))
+      #f)
+
+    (defn (get-slots)
+      (list (this a) (this b)))))
+
+(define x (make-foo 1 2 #f))
+(define y (make-foo 10 20 #t))
+
+(print "initial")
+(print (x get-slots))
+(print (y get-slots))
+
+(print "doubling a in x")
+(x double-a)
+(print (x get-slots))
+(print (y get-slots))
+
+(print "doubling b in x")
+(x double-b)
+(print (x get-slots))
+(print (y get-slots))
+
+(print "doubling a in y")
+(y double-a)
+(print (x get-slots))
+(print (y get-slots))
+
+(print "doubling b in y")
+(y double-b)
+(print (x get-slots))
+(print (y get-slots))
+
+(print "adding 10 to a in y")
+(let ((increase-by 10))
+  (y increase-a-by increase-by)
+  (print (x get-slots))
+  (print (y get-slots)))
+
+(print "getting foo of x and y")
+(print (x foo))
+(print (y foo))
+
+(print "delegating x to y")
+(x delegate-to y)
+
+(print "getting foo of x and y")
+(print (x foo))
+(print (y foo))
+
+; output:
+;
+; "initial"
+; (1 2)
+; (10 20)
+; "doubling a in x"
+; (2 2)
+; (10 20)
+; "doubling b in x"
+; (2 4)
+; (10 20)
+; "doubling a in y"
+; (2 4)
+; (20 20)
+; "doubling b in y"
+; (2 4)
+; (20 40)
+; "adding 10 to a in y"
+; (2 4)
+; (30 40)
+; "getting foo of x and y"
+; #ignore
+; 30
+; "delegating x to y"
+; "getting foo of x and y"
+; 2
+; 30

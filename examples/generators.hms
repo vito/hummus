@@ -1,0 +1,16 @@
+(defn (fibs)
+  (generator
+    (define n0 0)
+    (define n1 1)
+    (loop
+      (yield n0)
+      (define n1 (+ n0 n1))
+      (define n0 (- n1 n0)))))
+
+(define next-fib (fibs))
+(print (next-fib))
+(print (next-fib))
+(print (next-fib))
+(print (next-fib))
+(print (next-fib))
+(print (next-fib))
