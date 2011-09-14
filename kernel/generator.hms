@@ -1,0 +1,20 @@
+(provide! (generator)
+  (defn (aux f)
+    (define here (get-current-environment))
+
+    (defn (start #ignore)
+      (reset
+        (lambda (p)
+          (f (lambda (v)
+                (shift p
+                  (lambda (k)
+                    (set! here start k)
+                    v)))))))
+
+    (lambda () (start #inert)))
+
+  (define quote (vau (e) #ignore e))
+
+  (define generator
+    (vau body e
+      (eval (list aux (list* lambda (quote (yield)) body)) e))))
