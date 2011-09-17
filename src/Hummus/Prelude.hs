@@ -6,6 +6,7 @@ import Control.Monad.CC
 import Control.Monad.CC.Dynvar
 import Control.Monad.Trans
 import Data.Attoparsec
+import Data.IORef
 import Data.Time
 import qualified Data.ByteString as BS
 
@@ -19,6 +20,30 @@ import Paths_hummus
 new :: VM ans (Value ans)
 new = do
   env <- newEnvironment []
+
+  defn env "make-encapsulation-type" $ \Null _ -> do
+    i <- liftIO (newIORef ())
+
+    let cons =
+          Applicative . CoreOperative $ \(Pair a Null) _ -> do
+            vr <- liftIO (newIORef a)
+            return Encapsulation { eID = i, eValue = vr }
+
+        pred =
+          Applicative . CoreOperative $ \(Pair a Null) _ ->
+            case a of
+              Encapsulation { eID = eid } -> return (Boolean (eid == i))
+              _ -> return (Boolean False)
+
+        decons =
+          Applicative . CoreOperative $ \(Pair a Null) _ ->
+            case a of
+              Encapsulation { eID = eid, eValue = vr } | eid == i ->
+                liftIO (readIORef vr)
+
+              _ -> error "encapsulation type mismatch"
+
+    return (Pair cons (Pair pred (Pair decons Null)))
 
   defn env "reset" $ \(Pair b _) e ->
     reset $ \p ->

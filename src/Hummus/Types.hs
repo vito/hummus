@@ -6,6 +6,7 @@ import Control.Monad.CC
 import Control.Monad.CC.Dynvar
 import Control.Monad.CC.Prompt
 import Control.Monad.Trans
+import Data.IORef
 import qualified Data.HashTable.IO as H
 
 
@@ -31,6 +32,10 @@ data Value ans
   = Applicative (Value ans)
   | Boolean Bool
   | Dynvar (Dynvar (VM ans) (Value ans))
+  | Encapsulation
+      { eID :: IORef ()
+      , eValue :: IORef (Value ans) -- for shallow equality check
+      }
   | Environment (H.LinearHashTable String (Value ans)) [Value ans]
   | Ignore
   | Inert
@@ -55,6 +60,7 @@ instance forall ans. Show (Value ans) where
   show (Boolean True) = "#t"
   show (Boolean False) = "#f"
   show (Dynvar _) = "<dynamic variable>"
+  show (Encapsulation {}) = "<encapsulation>"
   show (Environment _ _) = "<environment>"
   show Ignore = "#ignore"
   show Inert = "#inert"
@@ -79,6 +85,8 @@ instance forall ans. Show (Value ans) where
 instance forall ans. Eq (Value ans) where
   Applicative a == Applicative b = a == b
   Boolean a == Boolean b = a == b
+  Encapsulation aid av == Encapsulation bid bv =
+    aid == bid && av == bv
   Ignore == Ignore = True
   Inert == Inert = True
   Null == Null = True
