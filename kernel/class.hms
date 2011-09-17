@@ -1,0 +1,30 @@
+(provide! (class new)
+  (define quote (vau (e) #ignore e))
+
+  (define class
+    (vau (name . body) e
+      (let ((pred-name (string->symbol (join (symbol->string name) "?")))
+            (cls (eval (list* make-object
+                              (list defn (list (quote name))
+                                (symbol->string name))
+
+                              (list defn (list (quote initialize))
+                                #inert)
+
+                              body)
+                    e)))
+        (defn (pred? o)
+          (and? (object? o)
+                (or? (eq? (send o parent) cls)
+                     (pred? (send o parent)))))
+
+        (apply (wrap set!) (list e pred-name pred?))
+        (apply (wrap set!) (list e name cls))
+
+        cls)))
+  
+  (define new
+    (vau (cls . args) e
+      (let ((obj (clone (eval cls e))))
+        (eval (list* send obj (quote initialize) args) e)
+        obj))))

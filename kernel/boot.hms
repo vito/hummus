@@ -297,4 +297,5 @@
   (abort root-prompt ()))
 
 (load (get-hummus-data-file "kernel/object.hms"))
+(load (get-hummus-data-file "kernel/class.hms"))
 (load (get-hummus-data-file "kernel/generator.hms"))
