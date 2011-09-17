@@ -1,0 +1,94 @@
+(provide! (with-restarts bind restart signal fail warn
+           condition condition? error error? simple-error simple-error?)
+  ; [message -> #inert]
+  (define handlers (make-dynvar ()))
+
+  ; [(name . (args -> any))]
+  (define restarts (make-dynvar ()))
+
+  (define with-restarts
+    (vau (bindings . body) e
+      (reset
+        (lambda (p)
+          (with ((restarts (append (map (make-restart e p) bindings)
+                                   (restarts))))
+            (eval (cons sequence body) e))))))
+
+  (define restart
+    (vau (name . args) e
+      (let (((found . res) (lookup name (restarts))))
+        (if found
+          (eval (cons res args) e)
+          #inert)))) ; ignore
+
+  (define bind
+    (vau (bindings . body) e
+      (with ((handlers (append (map (make-handler e) bindings)
+                               (handlers))))
+        (eval (cons sequence body) e))))
+
+  (defn (signal msg)
+    (for-each (handlers)
+      (lambda ((p? . b))
+        (if (p? msg)
+          (b msg)
+          #inert))))
+
+  (defn (fail msg)
+    (let ((err (if (error? msg) msg (new simple-error msg))))
+      (signal err)
+
+      (display (join (send err name) ": "))
+      (print (send err message))
+      (exit)))
+  
+  (defn (warn msg)
+    (signal msg)
+    (display (join (send err name) ": "))
+    (print (send wrn message)))
+
+  (defn (make-restart env prompt)
+    (lambda ((name args . body))
+      (list name
+            (eval (list lambda args (list abort prompt (cons sequence body)))
+                  env))))
+
+  (defn (make-handler env)
+    (lambda ((pred? vars . body))
+      (eval
+        (list cons pred?
+              (list* lambda (if (null? vars) (list #ignore) vars) body))
+        env)))
+
+  (class condition)
+
+  (class error (delegate-to condition))
+
+  (class warning (delegate-to condition))
+
+  (class simple-error
+    (delegate-to error)
+
+    (defn (initialize msg)
+      (set msg msg))
+    
+    (defn (message) msg))
+
+  (class simple-warning
+    (delegate-to warning)
+
+    (defn (initialize msg)
+      (set msg msg))
+    
+    (defn (message) msg)))
+
+(class message-not-understood
+  (delegate-to error)
+
+  (defn (initialize obj msg)
+    (set obj obj)
+    (set msg msg))
+
+  (defn (message)
+    (join "The message `" (symbol->string msg)
+          "' is not understood by " (show obj) ".")))
