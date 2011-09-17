@@ -1,21 +1,55 @@
-(provide! (this make-object)
-  (define this (make-dynvar))
+(provide! (this make-object object? send clone)
+  (define this (make-dynvar ()))
+
+  (define (object object? deobject) (make-encapsulation-type))
+
+  (define make-object
+    (vau body e
+      (let ((env (make-object-environment e)))
+        (eval (cons list body) env)
+        (object env))))
+
+  (defn (clone o)
+    (make-object (delegate-to o)))
+
+  (define send
+    (vau (target msg . args) e
+      (define obj (eval target e))
+      (send-from e obj obj msg args)))
+
+  (defn (send-from e where obj msg args)
+    (define env (deobject obj))
+    (cond
+      ((apply (wrap binds?) (list env msg))
+        (with ((this where))
+          (eval (list* (eval msg env) args) e)))
+
+      ; try again on the parent object
+      ((binds? env *parent*)
+        (send-from e where (remote-eval *parent* env) msg args))
+
+      (#t (fail (new message-not-understood where msg)))))
 
   (defn (make-object-environment e)
-    (let ((obj (let-redirect e () (get-current-environment))))
-      (set! obj *slots* (make-environment))
+    (let* ((slots (make-environment))
+           (obj (make-environment slots e)))
+      (set! obj *parent* (object (make-environment)))
 
-      (set! obj *parent*
-        ; TODO: error
-        (vau #ignore #ignore #ignore))
+      (set! obj parent (remote-eval (lambda () *parent*) obj))
 
       (set! obj property
         (vau (x y) env
-          (eval (list set! (remote-eval *slots* obj) x (eval y env)) obj)
+          (eval (list set! slots x (eval y env)) obj)
           (apply (wrap set!)
                 (list obj x
-                      (eval (list lambda () x) (remote-eval *slots* obj)))
+                      (eval (list lambda () x) slots))
                 obj)))
+
+      (set! obj accessor
+        (vau (what) #ignore
+          (apply (wrap set!)
+                 (list obj what (eval (list lambda () what) slots))
+                 obj)))
 
       (set! obj delegate-to
         (lambda (to)
@@ -23,20 +57,11 @@
 
       (set! obj set
         (vau (where what) e
-          (eval (list set! (remote-eval *slots* obj) where what) e)))
+          (eval (list set! slots where what) e)))
 
-      obj))
+      (set! obj responds-to?
+        (vau (what) #ignore
+          (or? (apply (wrap binds?) (list obj what))
+               ((remote-eval *parent* obj) responds-to? what))))
 
-  (define make-object
-    (vau es e
-      (let ((obj (make-object-environment e)))
-        (eval (cons list es) obj)
-        (define self
-          (vau (fun . args) from
-            (let (((where . name) (if (pair? fun) fun (cons self fun))))
-              (if (apply (wrap binds?) (list obj name))
-                (with ((this where))
-                  (eval (list* (eval name obj) args) from))
-                (eval (list* (remote-eval *parent* obj) (cons where name) args)
-                      from)))))
-        self))))
+      obj)))
