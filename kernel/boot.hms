@@ -282,7 +282,7 @@
           (eval exp env))))
 
 (define for-each
-  (wrap (vau x env (apply map x env) #inert)))
+  (wrap (vau (x f) env (apply map (list f x) env) #inert)))
 
 (define defn
   (vau (name . body) e
