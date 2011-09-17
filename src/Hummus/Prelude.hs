@@ -49,10 +49,10 @@ new = do
     reset $ \p ->
       apply e b (Pair (Prompt p) Null)
 
-  defn env "make-dynvar" $ \Null _ ->
-    liftM Dynvar dnew
+  defn env "make-dynvar" $ \(Pair a _) _ ->
+    liftM (flip Dynvar a) dnew
 
-  defn env "put!" $ \(Pair (Dynvar d) (Pair b Null)) _ ->
+  defn env "put!" $ \(Pair (Dynvar d _) (Pair b Null)) _ ->
     dset d b
 
   def env "with" $ \(Pair as bs) e -> do

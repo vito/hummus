@@ -48,11 +48,7 @@ apply env (Operative fs ef b se) as = do
 apply env (Applicative x) vs = do
   as <- evaluateAll env vs
   apply env x as
-apply env (Dynvar d) as = do
-  v <- dref d
-  if isCombiner v
-    then apply env v as
-    else return v
+apply _ (Dynvar d x) _ = liftM (maybe x id) (mdref d)
 apply _ v _ = error ("cannot apply: " ++ show v)
 
 define :: Value ans -> Value ans -> Value ans -> VM ans ()

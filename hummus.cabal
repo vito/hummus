@@ -21,6 +21,11 @@ executable hummus
   ghc-options:       -Wall -threaded -fno-warn-unused-do-bind -rtsopts
 
   other-modules:
+    Control.Monad.CC,
+    Control.Monad.CC.Cursor,
+    Control.Monad.CC.Dynvar,
+    Control.Monad.CC.Prompt,
+    Control.Monad.CC.Seq,
     Hummus.Types,
     Hummus.Parser,
     Hummus.Runtime,
@@ -30,7 +35,6 @@ executable hummus
     attoparsec,
     base,
     bytestring,
-    CC-delcont,
     filepath,
     haskeline,
     hashtables,

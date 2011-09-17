@@ -27,12 +27,13 @@ instance MonadDelimitedCont (Prompt ans) (SubCont ans IO) (VM ans) where
   pushPrompt p x = VM (pushPrompt p (unVM x))
   withSubCont p f = VM (withSubCont p (unVM . f))
   pushSubCont s x = VM (pushSubCont s (unVM x))
+  isValidPrompt p = VM (isValidPrompt p)
 
 data Value ans
   = Applicative (Value ans)
   | Boolean Bool
   | CoreOperative (Value ans -> Value ans -> VM ans (Value ans))
-  | Dynvar (Dynvar (VM ans) (Value ans))
+  | Dynvar (Dynvar (VM ans) (Value ans)) (Value ans)
   | Encapsulation
       { eID :: IORef ()
       , eValue :: IORef (Value ans) -- for shallow equality check
@@ -60,7 +61,7 @@ instance forall ans. Show (Value ans) where
   show (Boolean True) = "#t"
   show (Boolean False) = "#f"
   show (CoreOperative _) = "<core operative>"
-  show (Dynvar _) = "<dynamic variable>"
+  show (Dynvar _ _) = "<dynamic variable>"
   show (Encapsulation {}) = "<encapsulation>"
   show (Environment _ _) = "<environment>"
   show Ignore = "#ignore"
@@ -169,7 +170,7 @@ isPrompt (Prompt _) = True
 isPrompt _ = False
 
 isDynvar :: Value ans -> Bool
-isDynvar (Dynvar _) = True
+isDynvar (Dynvar _ _) = True
 isDynvar _ = False
 
 isCombiner :: Value ans -> Bool

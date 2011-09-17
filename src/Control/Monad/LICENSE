@@ -1,0 +1,67 @@
+The code in this library is derived from several sources:
+
+ * Code for the implementation of delimited continuations (Control.Monad.CC,
+   Control.Monad.CC.Prompt, Control.Monad.CC.Seq) is derived from work
+   (c) R. Kent Dybvig, Simon L. Peyton Jones and Amr Sabry.
+
+ * Code for dynamically scoped variables (Control.Monad.CC.Dynvar) is derived
+   from work (c) Amr Sabry, Chung-chieh Shan and Oleg Kiselyov.
+
+ * Additional modifications and improvements (c) Dan Doel and Oleg Kiselyov
+
+All code is available under the MIT license. The text of the licenses from the
+original sources is reproduced below.
+
+-------------------------------------------------------------------------------
+
+Code derived from "A Monadic Framework for Delimited Continuations" is
+distributed under the following license:
+
+Copyright (c) 2005, R. Kent Dybvig, Simon L. Peyton Jones, and Amr Sabry
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+-------------------------------------------------------------------------------
+
+Code derived from "Delimited Dynamic Binding" and its implementation is
+distributed under the following license:
+
+Copyright (c) 2006, Amr Sabry, Chung-chieh Shan, and Oleg Kiselyov
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+"Software"), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+-------------------------------------------------------------------------------
