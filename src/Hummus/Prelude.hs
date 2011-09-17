@@ -261,6 +261,15 @@ new = do
       Left msg ->
         error msg
 
+  defn env "string->symbol" $ \(Pair (String s) _) _ ->
+    return (Symbol s)
+
+  defn env "symbol->string" $ \(Pair (Symbol s) _) _ ->
+    return (String s)
+
+  defn env "join" $ \as _ ->
+    return (String (concatMap (\(String s) -> s) (toList as)))
+
   bootFile <- liftIO (getDataFileName "kernel/boot.hms")
   boot <- liftIO (BS.readFile bootFile)
   case parseOnly sexps boot of
