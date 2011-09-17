@@ -17,7 +17,8 @@ executable hummus
   hs-source-dirs:    src
   main-is:           Main.hs
 
-  ghc-options:       -Wall -threaded -fno-warn-unused-do-bind
+  ghc-prof-options:  -prof -auto-all -caf-all
+  ghc-options:       -Wall -threaded -fno-warn-unused-do-bind -rtsopts
 
   other-modules:
     Hummus.Types,
