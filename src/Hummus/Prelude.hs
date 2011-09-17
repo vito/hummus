@@ -82,7 +82,7 @@ new = do
       let app = Applicative . CoreOperative $ \(Pair x _) _ -> f (return x)
       in apply e b (Pair app Null)
 
-  defn env "abort" $ \(Pair a (Pair b _)) e -> do
+  def env "abort" $ \(Pair a (Pair b _)) e -> do
     Prompt p <- evaluate e a
     abort p (evaluate e b)
 
