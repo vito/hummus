@@ -29,7 +29,7 @@ new = do
             vr <- liftIO (newIORef a)
             return Encapsulation { eID = i, eValue = vr }
 
-        pred =
+        test =
           Applicative . CoreOperative $ \(Pair a Null) _ ->
             case a of
               Encapsulation { eID = eid } -> return (Boolean (eid == i))
@@ -43,7 +43,7 @@ new = do
 
               _ -> error "encapsulation type mismatch"
 
-    return (Pair cons (Pair pred (Pair decons Null)))
+    return (Pair cons (Pair test (Pair decons Null)))
 
   defn env "reset" $ \(Pair b _) e ->
     reset $ \p ->
@@ -52,23 +52,11 @@ new = do
   defn env "make-dynvar" $ \Null _ ->
     liftM Dynvar dnew
 
-  defn env "with-dynvar" $ \(Pair b _) e -> do
-    dnew >>= \d ->
-      dlet d Null $ apply e b (Pair (Dynvar d) Null)
-
-  defn env "get" $ \(Pair (Dynvar d) Null) _ ->
-    dref d
-
   defn env "put!" $ \(Pair (Dynvar d) (Pair b Null)) _ ->
     dset d b
 
   def env "with" $ \(Pair as bs) e -> do
-    let letDyn ([a, b]:as) bs = do
-          Dynvar d <- evaluate e a
-          v <- evaluate e b
-          dlet d v (letDyn as bs)
-        letDyn [] bs = evaluateSequence e (toList bs)
-    letDyn (map toList (toList as)) bs
+    letDyn e (map toList (toList as)) (toList bs)
 
   defn env "shift" $ \(Pair a (Pair b _)) e -> do
     Prompt p <- evaluate e a
@@ -253,8 +241,8 @@ new = do
       Right ss ->
         evaluateSequence e ss
 
-      Left e ->
-        error e
+      Left msg ->
+        error msg
 
   bootFile <- liftIO (getDataFileName "kernel/boot.hms")
   boot <- liftIO (BS.readFile bootFile)
@@ -272,6 +260,14 @@ new = do
 
   defn :: Value ans -> String -> (Value ans -> Value ans -> VM ans (Value ans)) -> VM ans ()
   defn e n f = define e (Symbol n) (Applicative $ CoreOperative f)
+
+  letDyn :: Value ans -> [[Value ans]] -> [Value ans] -> VM ans (Value ans)
+  letDyn e [] bs = evaluateSequence e bs
+  letDyn e ([a, b]:as) bs = do
+    Dynvar d _ <- evaluate e a
+    v <- evaluate e b
+    dlet d v (letDyn e as bs)
+  letDyn _ (p:_) _ = error $ "unknown pair: " ++ show p
 
 fromGround :: (Value ans -> VM ans (Value ans)) -> VM ans (Value ans)
 fromGround x = do

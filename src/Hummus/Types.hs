@@ -31,6 +31,7 @@ instance MonadDelimitedCont (Prompt ans) (SubCont ans IO) (VM ans) where
 data Value ans
   = Applicative (Value ans)
   | Boolean Bool
+  | CoreOperative (Value ans -> Value ans -> VM ans (Value ans))
   | Dynvar (Dynvar (VM ans) (Value ans))
   | Encapsulation
       { eID :: IORef ()
@@ -47,7 +48,6 @@ data Value ans
       , oBody :: Value ans
       , oStaticEnvironment :: Maybe (Value ans)
       }
-  | CoreOperative (Value ans -> Value ans -> VM ans (Value ans))
   | Pair (Value ans) (Value ans)
   | Prompt (Prompt ans (Value ans))
   | String String
@@ -59,6 +59,7 @@ instance forall ans. Show (Value ans) where
   show (Applicative v) = "<applicative " ++ show v ++ ">"
   show (Boolean True) = "#t"
   show (Boolean False) = "#f"
+  show (CoreOperative _) = "<core operative>"
   show (Dynvar _) = "<dynamic variable>"
   show (Encapsulation {}) = "<encapsulation>"
   show (Environment _ _) = "<environment>"
@@ -68,7 +69,6 @@ instance forall ans. Show (Value ans) where
   show (Number n) = show n
   show (Operative { oFormals = fs, oEnvironmentFormal = ef, oBody = b }) =
     "<operative " ++ show fs ++ " " ++ show ef ++ " " ++ show b ++ ">"
-  show (CoreOperative _) = "<core operative>"
   show p@(Pair _ _) = "(" ++ showPair p ++ ")"
     where
       showPair (Pair a b)
@@ -93,7 +93,6 @@ instance forall ans. Eq (Value ans) where
   Number a == Number b = a == b
   Operative afs aef ab ase == Operative bfs bef bb bse =
     afs == bfs && aef == bef && ab == bb && ase == bse
-  CoreOperative _ == CoreOperative _ = False
   Pair ah at == Pair bh bt = ah == bh && at == bt
   Prompt a == Prompt b =
     case eqPrompt a b of
