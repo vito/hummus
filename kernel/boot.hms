@@ -256,7 +256,7 @@
     (eval o (eval e d))))
 
 (define bindings->environment
-  (vau bs env
+  (vau bindings env
     (eval (list let-redirect
                 (make-environment)
                 bindings
