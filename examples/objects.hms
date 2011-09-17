@@ -4,67 +4,71 @@
     (property b given-b)
 
     (defn (double-a)
-      (this increase-a-by (this a)))
+      (send (this) increase-a-by (send (this) a)))
 
     (defn (double-b)
-      (this increase-b-by (this b)))
+      (send (this) increase-b-by (send (this) b)))
 
     (defn (increase-a-by by)
-      (this set a (+ (this a) by)))
+      (send (this) set a (+ (send (this) a) by)))
 
     (defn (increase-b-by by)
-      (this set b (+ (this b) by)))
+      (send (this) set b (+ (send (this) b) by)))
 
     (if with-foo?
-      (defn (foo) (this a))
+      (defn (foo) (send (this) a))
       #f)
 
     (defn (get-slots)
-      (list (this a) (this b)))))
+      (list (send (this) a) (send (this) b)))))
 
 (define x (make-foo 1 2 #f))
 (define y (make-foo 10 20 #t))
 
 (print "initial")
-(print (x get-slots))
-(print (y get-slots))
+(print (send x get-slots))
+(print (send y get-slots))
 
 (print "doubling a in x")
-(x double-a)
-(print (x get-slots))
-(print (y get-slots))
+(send x double-a)
+(print (send x get-slots))
+(print (send y get-slots))
 
 (print "doubling b in x")
-(x double-b)
-(print (x get-slots))
-(print (y get-slots))
+(send x double-b)
+(print (send x get-slots))
+(print (send y get-slots))
 
 (print "doubling a in y")
-(y double-a)
-(print (x get-slots))
-(print (y get-slots))
+(send y double-a)
+(print (send x get-slots))
+(print (send y get-slots))
 
 (print "doubling b in y")
-(y double-b)
-(print (x get-slots))
-(print (y get-slots))
+(send y double-b)
+(print (send x get-slots))
+(print (send y get-slots))
 
 (print "adding 10 to a in y")
 (let ((increase-by 10))
-  (y increase-a-by increase-by)
-  (print (x get-slots))
-  (print (y get-slots)))
+  (send y increase-a-by increase-by)
+  (print (send x get-slots))
+  (print (send y get-slots)))
 
 (print "getting foo of x and y")
-(print (x foo))
-(print (y foo))
+(bind ((message-not-understood? (e)
+          (print (cons "caught" (send e message)))
+          (restart ignore)))
+  (with-restarts ((ignore () #inert))
+    (print (send x foo))))
+(print (send y foo))
 
 (print "delegating x to y")
-(x delegate-to y)
+(send x delegate-to y)
 
 (print "getting foo of x and y")
-(print (x foo))
-(print (y foo))
+(print (send x foo))
+(print (send y foo))
 
 ; output:
 ;
