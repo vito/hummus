@@ -218,8 +218,25 @@ new = do
     return (Number (a - b))
 
   defn env "print" $ \(Pair a _) _ -> do
+    case a of
+      String s -> liftIO (putStrLn s)
+      _ -> liftIO (print a)
+
+    return Inert
+
+  defn env "display" $ \(Pair a _) _ -> do
+    case a of
+      String s -> liftIO (putStr s)
+      _ -> liftIO (putStr (show a))
+
+    return Inert
+
+  defn env "write" $ \(Pair a _) _ -> do
     liftIO (print a)
     return Inert
+
+  defn env "show" $ \(Pair a _) _ ->
+    return (String (show a))
 
   def env "time" $ \(Pair a _) e -> do
     before <- liftIO getCurrentTime
