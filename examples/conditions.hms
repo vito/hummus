@@ -1,0 +1,18 @@
+(bind ((boolean? (e) (print (cons "boolean!" e)))
+       (number? () (print "number!")))
+  (print "pre-signal")
+  (signal #t)
+  (signal "foo")
+  (signal 123)
+  (print "post-signal"))
+
+(print
+  (bind ((boolean? (e)
+            (print (cons "caught" e))
+            (restart use-value 43)))
+    (with-restarts ((foo () 42)
+                    (use-value (v) v))
+      (print "pre-signal")
+      (signal #t)
+      (print "post-signal")
+      100)))
