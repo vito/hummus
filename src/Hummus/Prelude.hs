@@ -254,7 +254,7 @@ new = do
     liftIO (print x)
     liftIO (print (diffUTCTime after before))
     return Inert
-    
+
   def env "loop" $ \as e ->
     forever $ evaluateSequence e (toList as)
 

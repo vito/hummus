@@ -75,5 +75,7 @@ repl p e = do
     Nothing -> return ()
   where
     finish ss = do
-      lift (evaluateSequence e ss) >>= outputStrLn . show
+      v <- lift (evaluateSequence e ss)
+      String s <- lift (evaluate e (Pair (Symbol "send") (Pair v (Pair (Symbol "->string") Null))))
+      outputStrLn s
       repl "" e
