@@ -97,6 +97,15 @@ new = do
   defn env "symbol?"  $ \(Pair a _) _ ->
     return (Boolean (isSymbol a))
 
+  defn env "string?"  $ \(Pair a _) _ ->
+    return (Boolean (isString a))
+
+  defn env "subcontinuation?"  $ \(Pair a _) _ ->
+    return (Boolean (isSubContinuation a))
+
+  defn env "prompt?"  $ \(Pair a _) _ ->
+    return (Boolean (isPrompt a))
+
   defn env "inert?"  $ \(Pair a _) _ ->
     return (Boolean (isInert a))
 

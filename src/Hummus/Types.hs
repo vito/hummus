@@ -132,6 +132,10 @@ isApplicative :: Value ans -> Bool
 isApplicative (Applicative _) = True
 isApplicative _ = False
 
+isString :: Value ans -> Bool
+isString (String _) = True
+isString _ = False
+
 isSymbol :: Value ans -> Bool
 isSymbol (Symbol _) = True
 isSymbol _ = False
@@ -168,6 +172,10 @@ isOperative _ = False
 isPrompt :: Value ans -> Bool
 isPrompt (Prompt _) = True
 isPrompt _ = False
+
+isSubContinuation :: Value ans -> Bool
+isSubContinuation (SubContinuation _) = True
+isSubContinuation _ = False
 
 isDynvar :: Value ans -> Bool
 isDynvar (Dynvar _ _) = True
