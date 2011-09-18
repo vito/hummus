@@ -1,6 +1,6 @@
 (provide! (make-object object? send clone)
-  (record object (parent slots public private))
-  (record method (args body context))
+  (define-record object (parent slots public private))
+  (define-record method (args body context))
 
   (define make-object
     (vau body e

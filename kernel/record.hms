@@ -1,5 +1,7 @@
-(provide! (record)
-  (define record
+(provide! (define-record record?)
+  (define (record record? derecord) (make-encapsulation-type))
+
+  (define define-record
     (vau (name slots) e
       (let (((c p? as ss) (make-record slots))
             (pred-name (string->symbol (join (symbol->string name) "?"))))
@@ -15,8 +17,8 @@
 
         (zip (lambda (slot s)
                (define sn
-                 (string->symbol (join "set-" (symbol->string name)
-                                       "-" (symbol->string slot) "!")))
+                 (string->symbol (join "set-" (symbol->string name) "-"
+                                       (symbol->string slot) "!")))
                (apply (wrap set!) (list e sn s)))
              slots ss)
 
@@ -28,13 +30,14 @@
     (define constructor
       (apply (wrap lambda)
               (list slots
-                    (list c (list* bindings->environment
-                                  (zip list slots slots))))))
+                    (list record
+                          (list c (list* bindings->environment
+                                         (zip list slots slots)))))))
 
     (define accessors
-      (map (lambda (s) (lambda (r) (eval s (d r)))) slots))
+      (map (lambda (s) (lambda (r) (eval s (d (derecord r))))) slots))
 
     (define setters
-      (map (lambda (s) (lambda (r v) (apply (wrap set!) (list (d r) s v)))) slots))
+      (map (lambda (s) (lambda (r v) (apply (wrap set!) (list (d (derecord r)) s v)))) slots))
 
     (list constructor p? accessors setters)))
