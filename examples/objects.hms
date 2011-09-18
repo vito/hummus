@@ -3,24 +3,24 @@
     (property a given-a)
     (property b given-b)
 
-    (defn (double-a)
-      (send (this) increase-a-by (send (this) a)))
+    (public (double-a)
+      (increase-a-by a))
 
-    (defn (double-b)
-      (send (this) increase-b-by (send (this) b)))
+    (public (double-b)
+      (increase-b-by b))
 
-    (defn (increase-a-by by)
-      (send (this) set a (+ (send (this) a) by)))
+    (public (increase-a-by by)
+      (set a (+ a by)))
 
-    (defn (increase-b-by by)
-      (send (this) set b (+ (send (this) b) by)))
+    (public (increase-b-by by)
+      (set b (+ b by)))
 
     (if with-foo?
-      (defn (foo) (send (this) a))
+      (public (foo) a)
       #f)
 
-    (defn (get-slots)
-      (list (send (this) a) (send (this) b)))))
+    (public (get-slots)
+      (list a b))))
 
 (define x (make-foo 1 2 #f))
 (define y (make-foo 10 20 #t))

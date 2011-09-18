@@ -62,33 +62,33 @@
 
   (class condition)
 
-  (class error (delegate-to condition))
+  (class error (delegates-to condition))
 
-  (class warning (delegate-to condition))
+  (class warning (delegates-to condition))
 
   (class simple-error
-    (delegate-to error)
+    (delegates-to error)
 
-    (defn (initialize msg)
+    (public (initialize msg)
       (set msg msg))
     
-    (defn (message) msg))
+    (public (message) msg))
 
   (class simple-warning
-    (delegate-to warning)
+    (delegates-to warning)
 
-    (defn (initialize msg)
+    (public (initialize msg)
       (set msg msg))
     
-    (defn (message) msg)))
+    (public (message) msg)))
 
 (class message-not-understood
-  (delegate-to error)
+  (delegates-to error)
 
-  (defn (initialize obj msg)
+  (public (initialize obj msg)
     (set obj obj)
     (set msg msg))
 
-  (defn (message)
+  (public (message)
     (join "The message `" (symbol->string msg)
           "' is not understood by " (show obj) ".")))

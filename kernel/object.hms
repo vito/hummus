@@ -1,16 +1,17 @@
 (provide! (this make-object object? send clone)
   (define this (make-dynvar ()))
 
-  (define (object object? deobject) (make-encapsulation-type))
+  (record object (parent slots public private))
+  (record method (args body context))
 
   (define make-object
     (vau body e
-      (let ((env (make-object-environment e)))
-        (eval (cons list body) env)
-        (object env))))
+      (let ((obj (new-object e)))
+        (eval (cons list body) (object-private obj))
+        obj)))
 
   (defn (clone o)
-    (make-object (delegate-to o)))
+    (make-object (delegates-to o)))
 
   (define send
     (vau (target msg . args) e
@@ -18,50 +19,68 @@
       (send-from e obj obj msg args)))
 
   (defn (send-from e where obj msg args)
-    (define env (deobject obj))
+    (define public (object-public obj))
+
     (cond
-      ((apply (wrap binds?) (list env msg))
-        (with ((this where))
-          (eval (list* (eval msg env) args) e)))
+      ((apply (wrap binds?) (list public msg))
+        (define meth (eval msg public))
 
-      ; try again on the parent object
-      ((binds? env *parent*)
-        (send-from e where (remote-eval *parent* env) msg args))
+        (eval
+          (list*
+            let-redirect
+            (make-environment
+              (object-slots where)
+              (object-public where)
+              (object-private where)
+              (object-slots obj)
+              (object-public obj)
+              (method-context meth))
+            (list (list (method-args meth) (cons list args)))
+            (method-body meth))
+          e))
 
-      (#t (fail (new message-not-understood where msg)))))
+      ((null? (object-parent obj))
+        (fail (new message-not-understood where msg)))
 
-  (defn (make-object-environment e)
+      (#t (send-from e where (object-parent obj) msg args))))
+
+  (defn (new-object e)
     (let* ((slots (make-environment))
-           (obj (make-environment slots e)))
-      (set! obj *parent* (object (make-environment)))
+           (public (make-environment))
+           (private (make-environment e))
+           (obj (object () slots public private)))
+      (set! private *parent* (lambda () (object-parent obj)))
 
-      (set! obj parent (remote-eval (lambda () *parent*) obj))
-
-      (set! obj property
+      (set! private property
         (vau (x y) env
-          (eval (list set! slots x (eval y env)) obj)
-          (apply (wrap set!)
-                (list obj x
-                      (eval (list lambda () x) slots))
-                obj)))
+          (apply (wrap set!) (list slots x (eval y env)))
+          (apply (wrap set!) (list public x (eval (list lambda () x) slots)))))
 
-      (set! obj accessor
+      (set! private accessor
         (vau (what) #ignore
           (apply (wrap set!)
-                 (list obj what (eval (list lambda () what) slots))
-                 obj)))
+                 (list public what (eval (list lambda () what) slots)))))
 
-      (set! obj delegate-to
+      (set! private delegates-to
         (lambda (to)
-          (set! obj *parent* to)))
+          (set-object-parent! obj to)))
 
-      (set! obj set
+      (set! private set
         (vau (where what) e
           (eval (list set! slots where what) e)))
 
-      (set! obj responds-to?
+      (set! public responds-to?
         (vau (what) #ignore
-          (or? (apply (wrap binds?) (list obj what))
-               ((remote-eval *parent* obj) responds-to? what))))
+          (or? (apply (wrap binds?) (list public what))
+               (send (object-parent obj) responds-to? what))))
+
+      (set! private public
+        (vau ((name . args) . body) e
+          (apply (wrap set!) (list slots name (vau args e (apply (wrap send) (list* obj name args) e))))
+          (apply (wrap set!) (list public name (method args body e)))))
+
+      (remote-eval (public (parent) (*parent*)) private)
+
+      (remote-eval (public (delegate-to x) (delegates-to x)) private)
 
       obj)))

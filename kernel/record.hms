@@ -1,0 +1,40 @@
+(provide! (record)
+  (define record
+    (vau (name slots) e
+      (let (((c p? as ss) (make-record slots))
+            (pred-name (string->symbol (join (symbol->string name) "?"))))
+        (apply (wrap set!) (list e name c))
+        (apply (wrap set!) (list e pred-name p?))
+
+        (zip (lambda (slot a)
+               (define an
+                 (string->symbol (join (symbol->string name) "-"
+                                       (symbol->string slot))))
+               (apply (wrap set!) (list e an a)))
+             slots as)
+
+        (zip (lambda (slot s)
+               (define sn
+                 (string->symbol (join "set-" (symbol->string name)
+                                       "-" (symbol->string slot) "!")))
+               (apply (wrap set!) (list e sn s)))
+             slots ss)
+
+        #inert)))
+      
+  (defn (make-record slots)
+    (define (c p? d) (make-encapsulation-type))
+
+    (define constructor
+      (apply (wrap lambda)
+              (list slots
+                    (list c (list* bindings->environment
+                                  (zip list slots slots))))))
+
+    (define accessors
+      (map (lambda (s) (lambda (r) (eval s (d r)))) slots))
+
+    (define setters
+      (map (lambda (s) (lambda (r v) (apply (wrap set!) (list (d r) s v)))) slots))
+
+    (list constructor p? accessors setters)))

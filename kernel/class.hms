@@ -5,10 +5,10 @@
     (vau (name . body) e
       (let ((pred-name (string->symbol (join (symbol->string name) "?")))
             (cls (eval (list* make-object
-                              (list defn (list (quote name))
+                              (list (quote public) (list (quote name))
                                 (symbol->string name))
 
-                              (list defn (list (quote initialize))
+                              (list (quote public) (list (quote initialize))
                                 #inert)
 
                               body)
