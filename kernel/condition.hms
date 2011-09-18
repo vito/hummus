@@ -19,7 +19,7 @@
       (let (((found . res) (lookup name (restarts))))
         (if found
           (eval (cons res args) e)
-          #inert)))) ; ignore
+          (fail (new unknown-restart name))))))
 
   (define bind
     (vau (bindings . body) e
@@ -92,3 +92,12 @@
   (public (message)
     (join "The message `" (symbol->string msg)
           "' is not understood by " (show obj) ".")))
+
+(class unknown-restart
+  (delegates-to error)
+
+  (public (initialize name)
+    (set name name))
+
+  (public (message)
+    (join "Restart `" (symbol->string name) "' is unbound.")))
