@@ -1,6 +1,4 @@
-(provide! (this make-object object? send clone)
-  (define this (make-dynvar ()))
-
+(provide! (make-object object? send clone)
   (record object (parent slots public private))
   (record method (args body context))
 
@@ -49,6 +47,8 @@
            (public (make-environment))
            (private (make-environment e))
            (obj (object () slots public private)))
+      (set! private this obj)
+
       (set! private *parent* (lambda () (object-parent obj)))
 
       (set! private property
