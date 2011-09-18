@@ -25,7 +25,7 @@ evaluate env o@(Operative { oStaticEnvironment = Nothing }) =
 evaluate _ x = return x
 
 evaluateSequence :: Value ans -> [Value ans] -> VM ans (Value ans)
-evaluateSequence _ [] = return Null
+evaluateSequence _ [] = return Inert
 evaluateSequence e [s] = evaluate e s
 evaluateSequence e (s:ss) = evaluate e s >> evaluateSequence e ss
 
