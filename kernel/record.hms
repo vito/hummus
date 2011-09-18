@@ -34,10 +34,13 @@
                           (list c (list* bindings->environment
                                          (zip list slots slots)))))))
 
+    (define predicate
+      (lambda (r) (p? (derecord r))))
+
     (define accessors
       (map (lambda (s) (lambda (r) (eval s (d (derecord r))))) slots))
 
     (define setters
       (map (lambda (s) (lambda (r v) (apply (wrap set!) (list (d (derecord r)) s v)))) slots))
 
-    (list constructor p? accessors setters)))
+    (list constructor predicate accessors setters)))
