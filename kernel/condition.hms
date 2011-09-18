@@ -101,3 +101,14 @@
 
   (public (message)
     (join "Restart `" (symbol->string name) "' is unbound.")))
+
+(class cannot-send
+  (delegates-to error)
+
+  (public (initialize msg val)
+    (set msg msg)
+    (set val val))
+
+  (public (message)
+    (join "Value `" (show val) "' does not know how to "
+          "receive message `" (symbol->string msg) "'.")))

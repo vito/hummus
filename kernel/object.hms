@@ -13,8 +13,71 @@
 
   (define send
     (vau (target msg . args) e
-      (define obj (eval target e))
-      (send-from e obj obj msg args)))
+      (define val (eval target e))
+
+      (define (where obj)
+        (cond
+          ((object? val) (list val val))
+
+					; combiners
+          ((applicative? val)
+            (list (make-primitive val applicative) applicative))
+
+          ((dynvar? val)
+            (list (make-primitive val dynvar) dynvar))
+
+          ((operative? val)
+            (list (make-primitive val operative) operative))
+
+          ((combiner? val)
+            (list (make-primitive val combiner) combiner))
+
+          ; other primitives
+          ((boolean? val)
+            (list (make-primitive val boolean) boolean))
+
+          ((environment? val)
+            (list (make-primitive val environment) environment))
+
+          ((ignore? val)
+            (list (make-primitive val ignore) ignore))
+
+          ((inert? val)
+            (list (make-primitive val inert) inert))
+
+          ((null? val)
+            (list (make-primitive val null) null))
+
+          ((number? val)
+            (list (make-primitive val number) number))
+
+          ((pair? val)
+            (list (make-primitive val pair) pair))
+
+          ((prompt? val)
+            (list (make-primitive val prompt) prompt))
+
+          ((string? val)
+            (list (make-primitive val string) string))
+
+          ((subcontinuation? val)
+            (list (make-primitive val subcontinuation) subcontinuation))
+
+          ((symbol? val)
+            (list (make-primitive val symbol) symbol))
+
+          ; encapsulation
+          ((record? val)
+						(list (make-primitive val record) record))
+
+          (#t (fail (new cannot-send msg val)))))
+
+      (send-from e where obj msg args)))
+
+  (defn (make-primitive val obj)
+    (let ((inst (clone obj)))
+      (set! (object-private inst) this val)
+      inst))
 
   (defn (send-from e where obj msg args)
     (define public (object-public obj))
@@ -84,3 +147,29 @@
       (remote-eval (public (delegate-to x) (delegates-to x)) private)
 
       obj)))
+
+(define something
+  (make-object
+    (public (->string)
+      (show this))))
+
+(define combiner (make-object (delegates-to something)))
+(define applicative (make-object (delegates-to combiner)))
+(define dynvar (make-object (delegates-to combiner)))
+(define operative (make-object (delegates-to combiner)))
+
+(define boolean (make-object (delegates-to something)))
+(define environment (make-object (delegates-to something)))
+(define ignore (make-object (delegates-to something)))
+(define inert (make-object (delegates-to something)))
+(define null (make-object (delegates-to something)))
+(define number (make-object (delegates-to something)))
+(define pair (make-object (delegates-to something)))
+(define prompt (make-object (delegates-to something)))
+(define string (make-object (delegates-to something)))
+(define subcontinuation (make-object (delegates-to something)))
+(define symbol (make-object (delegates-to something)))
+
+(define record
+	(make-object (delegates-to something)
+		(public (->string) "<record>")))
