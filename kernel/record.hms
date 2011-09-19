@@ -35,7 +35,7 @@
                                          (zip list slots slots)))))))
 
     (define predicate
-      (lambda (r) (p? (derecord r))))
+      (lambda (r) (and? (record? r) (p? (derecord r)))))
 
     (define accessors
       (map (lambda (s) (lambda (r) (eval s (d (derecord r))))) slots))
