@@ -1,4 +1,4 @@
-(provide! (make-object object? send clone)
+(provide! (make-object object? send clone something)
   (define-record object (parent slots public private))
   (define-record method (args body context))
 
@@ -109,7 +109,7 @@
     (let* ((slots (make-environment))
            (public (make-environment))
            (private (make-environment e))
-           (obj (object () slots public private)))
+           (obj (object something slots public private)))
       (set! private this obj)
 
       (set! private *parent* (lambda () (object-parent obj)))
@@ -139,37 +139,44 @@
 
       (set! private public
         (vau ((name . args) . body) e
-          (apply (wrap set!) (list slots name (vau args e (apply (wrap send) (list* obj name args) e))))
+          (apply (wrap set!) (list slots name (vau args e (eval (list* send (string->symbol "this") name args) e))))
           (apply (wrap set!) (list public name (method args body e)))))
 
       (remote-eval (public (parent) (*parent*)) private)
 
       (remote-eval (public (delegate-to x) (delegates-to x)) private)
 
-      obj)))
+      obj))
 
-(define something
-  (make-object
-    (public (->string)
-      (show this))))
+    (define something ())
 
-(define combiner (make-object (delegates-to something)))
+    (define something
+      (make-object
+        (public (->string)
+          (inspect))
+
+        (public (inspect)
+          (show this)))))
+
+(define combiner (make-object))
 (define applicative (make-object (delegates-to combiner)))
 (define dynvar (make-object (delegates-to combiner)))
 (define operative (make-object (delegates-to combiner)))
 
-(define boolean (make-object (delegates-to something)))
-(define environment (make-object (delegates-to something)))
-(define ignore (make-object (delegates-to something)))
-(define inert (make-object (delegates-to something)))
-(define null (make-object (delegates-to something)))
-(define number (make-object (delegates-to something)))
-(define pair (make-object (delegates-to something)))
-(define prompt (make-object (delegates-to something)))
-(define string (make-object (delegates-to something)))
-(define subcontinuation (make-object (delegates-to something)))
-(define symbol (make-object (delegates-to something)))
+(define boolean (make-object))
+(define environment (make-object))
+(define ignore (make-object))
+(define inert (make-object))
+(define null (make-object))
+(define number (make-object))
+(define pair (make-object))
+(define prompt (make-object))
+(define string
+  (make-object
+    (public (->string) this)))
+(define subcontinuation (make-object))
+(define symbol (make-object))
 
 (define record
-	(make-object (delegates-to something)
-		(public (->string) "<record>")))
+  (make-object
+    (public (inspect) "<record>")))
