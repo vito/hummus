@@ -91,7 +91,7 @@
 
   (public (message)
     (join "The message `" (symbol->string msg)
-          "' is not understood by " (show obj) ".")))
+          "' is not understood by " (send obj inspect) ".")))
 
 (class unknown-restart
   (delegates-to error)
