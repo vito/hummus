@@ -19,7 +19,7 @@
         (cond
           ((object? val) (list val val))
 
-					; combiners
+          ; combiners
           ((applicative? val)
             (list (make-primitive val applicative) applicative))
 
@@ -68,7 +68,7 @@
 
           ; encapsulation
           ((record? val)
-						(list (make-primitive val record) record))
+            (list (make-primitive val record) record))
 
           (#t (fail (new cannot-send msg val)))))
 
