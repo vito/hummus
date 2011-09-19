@@ -72,28 +72,28 @@
 
 ; output:
 ;
-; "initial"
+; initial
 ; (1 2)
 ; (10 20)
-; "doubling a in x"
+; doubling a in x
 ; (2 2)
 ; (10 20)
-; "doubling b in x"
+; doubling b in x
 ; (2 4)
 ; (10 20)
-; "doubling a in y"
+; doubling a in y
 ; (2 4)
 ; (20 20)
-; "doubling b in y"
+; doubling b in y
 ; (2 4)
 ; (20 40)
-; "adding 10 to a in y"
+; adding 10 to a in y
 ; (2 4)
 ; (30 40)
-; "getting foo of x and y"
-; #ignore
+; getting foo of x and y
+; ("caught" . "The message `foo' is not understood by <encapsulation>.")
 ; 30
-; "delegating x to y"
-; "getting foo of x and y"
+; delegating x to y
+; getting foo of x and y
 ; 2
 ; 30
